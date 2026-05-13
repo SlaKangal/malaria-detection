@@ -402,11 +402,11 @@ python src/predict.py --image path/to/cell.png --model cnn
 
 ## 👤 Geliştirici Bilgisi
 
-**Ad Soyad:** [Adınız]  
-**Üniversite:** [Üniversiteniz]  
-**Bölüm:** [Bölümünüz]  
-**Ders:** Derin Öğrenme / Yapay Zeka  
-**Danışman:** [Hoca Adı]  
+**Ad Soyad:** [Sıla]  
+**Üniversite:** [Ostim Teknik Üniversitesi]  
+**Bölüm:** [Yapay Zeka Mühendisliği]  
+**Ders:** Derin Öğrenme  
+**Danışman:** [Murat Şimşek]  
 **Akademik Yıl:** 2025-2026
 
 ---
