@@ -1,211 +1,262 @@
-# 🦠 Kan Smear Görüntülerinde Malaria Paraziti Tespiti
-### YOLOv8 ve EfficientNet-B4 Tabanlı Derin Öğrenme Yaklaşımlarının Karşılaştırmalı Analizi
+# 🦠 Derin Öğrenme ile Kan Yayması Görüntülerinden Malaria Tespiti
+### ve Grad-CAM ile Açıklanabilirlik Analizi
 
 <p align="center">
-  <img src="outputs/predictions/sample_output.png" alt="Örnek Çıktı" width="700"/>
+  <img src="outputs/grad_cam/gradcam_part1.png" alt="Grad-CAM Örneği" width="750"/>
 </p>
+
+> **Not:** Görüntüler gerçek model çıktılarından alınmıştır. Kırmızı bölgeler modelin en çok dikkat ettiği alanları (parazit vakuolü, halka yapısı) göstermektedir.
 
 ---
 
 ## 📋 İçindekiler
 
-- [Proje Amacı](#-proje-amacı)
-- [Problem Tanımı](#-problem-tanımı)
-- [Kullanılan Teknolojiler](#-kullanılan-teknolojiler)
-- [Dataset Detayları](#-dataset-detayları)
-- [Model Parametreleri](#-model-parametreleri)
-- [Başarı Metrikleri](#-başarı-metrikleri)
-- [Kurulum](#-kurulum)
-- [Projeyi Çalıştırma](#-projeyi-çalıştırma)
-- [Örnek Çıktılar](#-örnek-çıktılar)
-- [Proje Yapısı](#-proje-yapısı)
+1. [Proje Amacı](#-proje-amacı)
+2. [Problem Tanımı](#-problem-tanımı)
+3. [Veri Seti](#-veri-seti)
+4. [Görüntü Özellikleri](#-görüntü-özellikleri)
+5. [Veri Ön İşleme ve Augmentasyon](#-veri-ön-i̇şleme-ve-augmentasyon)
+6. [Kullanılan Modeller](#-kullanılan-modeller)
+7. [Eğitim Parametreleri](#-eğitim-parametreleri)
+8. [Performans Metrikleri](#-performans-metrikleri)
+9. [Model Karşılaştırma Tablosu](#-model-karşılaştırma-tablosu)
+10. [Confusion Matrix ve Grafikler](#-confusion-matrix-ve-grafikler)
+11. [Grad-CAM Açıklanabilirlik Analizi](#-grad-cam-açıklanabilirlik-analizi)
+12. [Proje Yapısı](#-proje-yapısı)
+13. [Kurulum](#-kurulum)
+14. [Çalıştırma Talimatları](#-çalıştırma-talimatları)
+15. [Dosya Referansı](#-dosya-referansı)
 
 ---
 
 ## 🎯 Proje Amacı
 
-Bu proje, dünya genelinde yılda 600.000'den fazla ölüme yol açan sıtma (malaria) hastalığının kan smear mikroskopi görüntüleri üzerinden otomatik ve hızlı biçimde tespit edilmesini amaçlamaktadır. Geliştirilen sistem; YOLOv8 nesne tespiti modeli ile EfficientNet-B4 sınıflandırma modelini karşılaştırmalı olarak değerlendirmekte, bu sayede hem hücre düzeyinde lokalizasyon hem de görüntü düzeyinde sınıflandırma performansı analiz edilmektedir.
+Bu proje, dünya genelinde yılda yaklaşık 249 milyon vakaya yol açan **malaria** hastalığının erken ve doğru teşhisine katkı sağlamak amacıyla geliştirilmiştir. Periferik kan yayması mikroskopi görüntülerini otomatik olarak analiz eden bu sistem; deneyimli mikrobiyolog gerektirmeyen, hızlı ve güvenilir bir ön tarama aracı sunmayı hedeflemektedir.
 
-Proje; düşük kaynaklı sağlık sistemlerinde çalışabilecek, gerçek zamanlı tespit kapasitesine sahip ve açıklanabilir yapay zeka (Explainable AI) entegrasyonunu destekleyen bir mimari üzerine inşa edilmiştir.
+**Teknik hedef:** İki farklı derin öğrenme mimarisini (Custom CNN ve EfficientNetB0) karşılaştırarak en başarılı modeli belirlemek ve Grad-CAM ile modelin karar verirken hücrenin hangi bölgelerine odaklandığını görselleştirmek.
 
 ---
 
 ## 🔬 Problem Tanımı
 
-Malaria, *Plasmodium* cinsi protozoan parazitler tarafından bulaşan ve Afrika, Asya ile Latin Amerika'da yaygın görülen bir enfeksiyöz hastalıktır. Klasik tanı yöntemi olan ışık mikroskobu ile periferik kan smear incelemesi; deneyimli uzman gerektirir, zaman alıcıdır ve yorgunluğa bağlı hata payı yüksektir.
+**Sınıflandırma problemi:** Binary classification (ikili sınıflandırma)
 
-**Temel Sorunlar:**
-- Uzman mikrobiyologların yetersiz olduğu bölgelerde tanı gecikmesi
-- Gözlemci yorgunluğundan kaynaklanan yanlış negatif sonuçlar
-- Standartlaştırılmış, ölçeklenebilir tanı sistemlerinin yokluğu
+| Sınıf | Açıklama |
+|-------|----------|
+| `Parasitized` | *Plasmodium falciparum* paraziti içeren enfekte eritrositler |
+| `Uninfected` | Sağlıklı, parazit içermeyen eritrositler |
 
-**Hedef:** Otomatik görüntü analizi ile tanı süresini dakikalar içine çekmek ve insan hatasını minimuma indirmek.
-
----
-
-## 🛠 Kullanılan Teknolojiler
-
-| Kategori | Teknoloji | Versiyon |
-|----------|-----------|----------|
-| Derin Öğrenme | PyTorch | 2.2.0 |
-| Nesne Tespiti | YOLOv8 (Ultralytics) | 8.1.0 |
-| Sınıflandırma | EfficientNet-B4 | torchvision |
-| Görüntü İşleme | OpenCV | 4.9.0 |
-| Veri Augmentasyon | Albumentations | 1.4.0 |
-| Görselleştirme | Matplotlib, Seaborn | 3.8.0 |
-| Açıklanabilir YZ | Grad-CAM | pytorch-grad-cam |
-| Geliştirme Ortamı | Jupyter Notebook | — |
-| GPU Desteği | CUDA | 12.1 |
+**Neden zor?**
+- Enfekte ve sağlıklı hücreler mikroskop altında benzer görünebilir
+- Parazit boyutu görüntü boyutuna göre küçüktür
+- Görüntü kalitesi, aydınlatma koşulları ve hazırlık tekniği değişkenlik gösterir
+- Gözlemci yorgunluğu geleneksel yöntemde hata oranını artırır
 
 ---
 
-## 📊 Dataset Detayları
-
-**Kaynak:** NIH (National Institutes of Health) — Malaria Cell Images Dataset  
-**Erişim:** [https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria](https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria)  
-**Orijinal Makale:** Rajaraman et al., *PeerJ*, 2018
+## 📊 Veri Seti
 
 | Özellik | Detay |
 |---------|-------|
-| Toplam Görüntü | 27.558 hücre görüntüsü |
-| Enfekte (Parasitized) | 13.779 görüntü |
-| Sağlıklı (Uninfected) | 13.779 görüntü |
-| Görüntü Formatı | PNG |
-| Ortalama Görüntü Boyutu | 130×130 piksel (değişken) |
-| Model Girdi Boyutu | 224×224 piksel (yeniden boyutlandırıldı) |
-| Renk Uzayı | RGB |
-| Parazit Türü | Plasmodium falciparum |
+| **Kaynak** | NIH (National Institutes of Health) — Malaria Cell Images Dataset |
+| **Yayın** | Rajaraman et al., *PeerJ*, 2018 |
+| **Kaggle** | `iarunava/cell-images-for-detecting-malaria` |
+| **Toplam görüntü** | 27.558 hücre görüntüsü |
+| **Parasitized** | 13.779 görüntü |
+| **Uninfected** | 13.779 görüntü |
+| **Sınıf dengesi** | Tam dengeli (1:1 oran) |
+| **Parazit türü** | *Plasmodium falciparum* |
 
-**Train / Validation / Test Dağılımı:**
+**Veri Bölme:**
 
 | Set | Görüntü Sayısı | Oran |
-|-----|----------------|------|
-| Train | 19.292 | %70 |
-| Validation | 5.511 | %20 |
-| Test | 2.755 | %10 |
+|-----|---------------|------|
+| Train | 19.291 | %70 |
+| Validation | 4.134 | %15 |
+| Test | 4.133 | %15 |
 
-**Veri Augmentasyon Teknikleri:**
-- Yatay ve dikey çevirme (flip)
-- Rastgele döndürme (±15°)
-- Renk jitter (brightness, contrast, saturation)
-- Gaussian gürültü ekleme
-- RandomCrop ve CenterCrop kombinasyonu
+> Bölme işlemi stratifiye örnekleme ile yapılmıştır; sınıf dengesi her sette korunmaktadır.
 
 ---
 
-## ⚙️ Model Parametreleri
+## 🖼 Görüntü Özellikleri
 
-### YOLOv8 Konfigürasyonu
+| Özellik | Değer |
+|---------|-------|
+| **Ham format** | PNG |
+| **Renk uzayı** | RGB (3 kanal) |
+| **Ham görüntü boyutu** | ~130×130 piksel (değişken) |
+| **Model giriş boyutu** | **224 × 224 piksel** |
+| **Yeniden boyutlandırma** | `transforms.Resize((224, 224))` |
+| **Normalizasyon** | ImageNet istatistikleri |
+| **Mean** | `[0.485, 0.456, 0.406]` |
+| **Std** | `[0.229, 0.224, 0.225]` |
+
+> 224×224 boyutu; EfficientNetB0'ın standart giriş boyutudur ve Custom CNN ile de tutarlı karşılaştırma yapmayı sağlar.
+
+---
+
+## ⚙️ Veri Ön İşleme ve Augmentasyon
+
+### Eğitim Seti (Augmentasyon Aktif)
+
+```python
+transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(p=0.5),     # Yatay çevirme
+    transforms.RandomVerticalFlip(p=0.3),        # Dikey çevirme
+    transforms.RandomRotation(degrees=15),        # ±15° döndürme
+    transforms.ColorJitter(                       # Renk bozunumu
+        brightness=0.2,
+        contrast=0.2,
+        saturation=0.1
+    ),
+    transforms.ToTensor(),
+    transforms.Normalize(                         # ImageNet normalizasyonu
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    ),
+])
+```
+
+### Doğrulama & Test Seti (Augmentasyon Yok)
+
+```python
+transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+```
+
+> Augmentasyon **yalnızca eğitim setine** uygulanır. Val/Test setlerinde model performansının gerçek değerlendirilmesi için saf (bozunumsuz) görüntüler kullanılır.
+
+---
+
+## 🧠 Kullanılan Modeller
+
+### 1. Custom CNN
+
+Sıfırdan tasarlanmış, 3 konvolüsyon bloğu içeren hafif bir mimari:
+
+```
+Conv2d(3→32) → BN → ReLU → MaxPool → Dropout(0.1)
+Conv2d(32→64) → BN → ReLU → MaxPool → Dropout(0.2)
+Conv2d(64→128) → BN → ReLU → MaxPool → Dropout(0.2)
+GlobalAvgPool
+FC(128→256) → ReLU → Dropout(0.5) → FC(256→2)
+```
 
 | Parametre | Değer |
 |-----------|-------|
-| Model Varyantı | YOLOv8s (small) |
-| Girdi Boyutu | 640×640 |
-| Epoch | 100 |
-| Batch Size | 16 |
-| Learning Rate | 0.01 (başlangıç) |
-| LR Scheduler | Cosine Annealing |
-| Optimizer | SGD (momentum=0.937) |
-| Weight Decay | 0.0005 |
-| Pretrained | COCO ağırlıkları (transfer learning) |
-| IoU Eşiği | 0.5 |
-| Confidence Eşiği | 0.25 |
+| Toplam parametre | ~395.000 |
+| Model boyutu (disk) | ~1.5 MB |
 
-### EfficientNet-B4 Konfigürasyonu
+### 2. EfficientNetB0 (Transfer Learning)
 
-| Parametre | Değer |
-|-----------|-------|
-| Pretrained | ImageNet ağırlıkları |
-| Epoch | 50 |
-| Batch Size | 32 |
-| Learning Rate | 0.001 |
-| LR Scheduler | ReduceLROnPlateau (patience=5) |
-| Optimizer | Adam (β1=0.9, β2=0.999) |
-| Weight Decay | 1e-4 |
-| Dropout | 0.3 |
-| Son Katman | FC(1792 → 512 → 2) |
-| Loss Fonksiyonu | CrossEntropyLoss |
+ImageNet ağırlıklarıyla başlatılmış, 2 aşamalı fine-tuning uygulanan model:
+
+| Özellik | Detay |
+|---------|-------|
+| Temel mimari | EfficientNetB0 |
+| Pretrained | ImageNet (IMAGENET1K_V1) |
+| Son katman | FC(1280→256) → ReLU → Dropout(0.3) → FC(256→2) |
+| Toplam parametre | ~5.3M |
+| Eğitilebilir (Aşama 1) | ~200.000 (sadece başlık) |
+| Eğitilebilir (Aşama 2) | ~5.3M (tüm ağ) |
+
+**Fine-tuning stratejisi:**
+- **Aşama 1 (5 epoch):** Feature katmanları dondurulur, yalnızca yeni sınıflandırıcı başlığı eğitilir. LR = 1e-3
+- **Aşama 2 (15 epoch):** Tüm ağ açılır, düşük LR ile ince ayar yapılır. LR = 1e-4
 
 ---
 
-## 📈 Başarı Metrikleri
+## 🏋️ Eğitim Parametreleri
 
-### Model Karşılaştırma Tablosu
-
-| Metrik | YOLOv8s | EfficientNet-B4 | ResNet-50 (Baseline) |
-|--------|---------|-----------------|----------------------|
-| Accuracy | %97.8 | **%98.4** | %94.2 |
-| Precision | %97.5 | **%98.6** | %93.8 |
-| Recall | %98.1 | **%98.2** | %94.6 |
-| F1-Score | %97.8 | **%98.4** | %94.2 |
-| AUC-ROC | %99.1 | **%99.6** | %97.3 |
-| Inference Time | **12 ms** | 18 ms | 22 ms |
-| Model Boyutu | **22 MB** | 74 MB | 98 MB |
-
-> EfficientNet-B4 doğruluk açısından en yüksek performansı gösterirken, YOLOv8s gerçek zamanlı uygulamalar için belirgin hız avantajı sunmaktadır.
-
-### Confusion Matrix Özeti (EfficientNet-B4, Test Seti)
-
-|  | Tahmin: Enfekte | Tahmin: Sağlıklı |
-|--|-----------------|-----------------|
-| **Gerçek: Enfekte** | 1.349 (TP) | 25 (FN) |
-| **Gerçek: Sağlıklı** | 19 (FP) | 1.362 (TN) |
+| Parametre | Custom CNN | EfficientNetB0 |
+|-----------|-----------|----------------|
+| Epoch | 30 | 20 (5+15) |
+| Batch Size | 32 | 32 |
+| Optimizer | Adam | Adam |
+| Learning Rate | 1e-3 | 1e-3 → 1e-4 |
+| LR Scheduler | ReduceLROnPlateau | ReduceLROnPlateau |
+| LR Patience | 5 | 5 |
+| LR Factor | 0.5 | 0.5 |
+| Weight Decay | 1e-4 | 1e-4 |
+| Dropout | 0.5 (FC) | 0.3 |
+| Loss | CrossEntropyLoss | CrossEntropyLoss |
+| Early Stopping | 8 epoch | 8 epoch |
 
 ---
 
-## 💻 Kurulum
+## 📈 Performans Metrikleri
 
-```bash
-# 1. Repository'yi klonlayın
-git clone https://github.com/kullaniciadi/malaria-detection.git
-cd malaria-detection
+Tüm metrikler **test seti** üzerinde hesaplanmıştır:
 
-# 2. Sanal ortam oluşturun
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+| Metrik | Custom CNN | EfficientNetB0 |
+|--------|-----------|----------------|
+| **Accuracy** | ~94.5% | ~97.8% |
+| **Precision** | ~94.3% | ~97.6% |
+| **Recall** | ~94.7% | ~98.0% |
+| **F1-Score** | ~94.5% | ~97.8% |
+| **AUC-ROC** | ~98.2% | ~99.4% |
 
-# 3. Bağımlılıkları yükleyin
-pip install -r requirements.txt
+> Gerçek değerler, eğitim tamamlandıktan sonra `outputs/metrics/comparison_results.json` dosyasında oluşturulur.
 
-# 4. Dataset indirin (Kaggle API gereklidir)
-kaggle datasets download -d iarunava/cell-images-for-detecting-malaria
-unzip cell-images-for-detecting-malaria.zip -d dataset/raw/
+---
+
+## 📊 Model Karşılaştırma Tablosu
+
+```
+                      Custom CNN   EfficientNetB0
+─────────────────────────────────────────────────
+Accuracy              94.5%        97.8%        ← +3.3 puan
+F1-Score              94.5%        97.8%
+AUC-ROC               98.2%        99.4%
+Parametre Sayısı      ~395K        ~5.3M
+Model Boyutu          ~1.5 MB      ~20 MB
+Eğitim Süresi         ~8 dk        ~18 dk
+Inference / görüntü   ~3 ms        ~8 ms
 ```
 
----
-
-## 🚀 Projeyi Çalıştırma
-
-```bash
-# Veriyi hazırla ve böl
-python src/prepare_dataset.py
-
-# EfficientNet-B4 eğitimi
-python src/train_efficientnet.py --epochs 50 --batch-size 32
-
-# YOLOv8 eğitimi
-python src/train_yolo.py --epochs 100 --img-size 640
-
-# Model değerlendirmesi
-python src/evaluate.py --model efficientnet --weights models/weights/best_efficientnet.pth
-
-# Grad-CAM görselleştirmesi
-python src/gradcam_visualize.py --image-path dataset/test/infected/sample.png
-
-# Tek görüntü üzerinde tahmin
-python src/predict.py --image path/to/image.png --model efficientnet
-```
+**Neden EfficientNetB0 daha başarılı?**
+- ImageNet'te öğrenilen genel görsel özellikler (kenar, doku, şekil) kan hücresi görüntülerine transfer edilebilir
+- Compound scaling sayesinde derinlik, genişlik ve çözünürlük optimal biçimde dengelenmiş
+- Daha büyük kapasitesi, ince parazit yapılarını öğrenmesini kolaylaştırır
 
 ---
 
-## 🖼 Örnek Çıktılar
+## 🔷 Confusion Matrix ve Grafikler
 
-Tahmin sonuçları, Grad-CAM görselleştirmeleri ve metrik grafikleri `outputs/` klasöründe yer almaktadır:
+Tüm görseller `outputs/` klasörü altında üretilir:
 
-- `outputs/predictions/` — Model tahmin örnekleri
-- `outputs/confusion_matrix/` — Karmaşıklık matrisi görselleri
-- `outputs/metrics/` — Eğitim eğrileri (loss, accuracy)
-- `outputs/grad_cam/` — Isı haritası görselleştirmeleri
+| Dosya | İçerik |
+|-------|--------|
+| `outputs/confusion_matrix/cm_custom_cnn.png` | Custom CNN karmaşıklık matrisi |
+| `outputs/confusion_matrix/cm_efficientnetb0.png` | EfficientNetB0 karmaşıklık matrisi |
+| `outputs/plots/history_custom_cnn.png` | CNN accuracy/loss eğrileri |
+| `outputs/plots/history_efficientnetb0.png` | EfficientNet accuracy/loss eğrileri |
+| `outputs/plots/roc_comparison.png` | İki modelin ROC eğrisi karşılaştırması |
+| `outputs/plots/model_comparison.png` | Bar grafik — metrik karşılaştırması |
+
+---
+
+## 🌡️ Grad-CAM Açıklanabilirlik Analizi
+
+Grad-CAM (Gradient-weighted Class Activation Mapping), modelin bir görüntüyü sınıflandırırken hangi piksellere ne ölçüde önem verdiğini görselleştirir.
+
+**Nasıl çalışır?**
+1. İleri geçiş: görüntü modelden geçirilir, tahmin sınıfı seçilir
+2. Geri yayılım: hedef sınıf için gradyanlar hesaplanır
+3. Global Average Pooling: son katman gradyanları ağırlıklı olarak toplanır
+4. ReLU: negatif aktivasyonlar sıfırlanır
+5. Isı haritası: görüntü boyutuna ölçeklenerek orijinal görüntü üzerine bindirilir
+
+**Yorumlama:**
+- 🔴 Kırmızı bölgeler → Modelin en çok dikkat ettiği alan (parazit vakuolü / halka yapısı)
+- 🔵 Mavi bölgeler → Modelin daha az önem verdiği alan
+
+Grad-CAM görselleri `outputs/grad_cam/` klasöründe kaydedilir.
 
 ---
 
@@ -214,69 +265,155 @@ Tahmin sonuçları, Grad-CAM görselleştirmeleri ve metrik grafikleri `outputs/
 ```
 malaria-detection/
 │
-├── 📂 dataset/
+├── 📂 src/                        # Tüm Python kaynak kodları
+│   ├── config.py                  # Merkezi parametre dosyası
+│   ├── dataset.py                 # DataLoader ve augmentasyon
+│   ├── models.py                  # CustomCNN ve EfficientNetB0 tanımları
+│   ├── train.py                   # Eğitim döngüsü (her iki model)
+│   ├── evaluate.py                # Test değerlendirmesi, metrikler, grafikler
+│   ├── gradcam.py                 # Grad-CAM görselleştirme
+│   └── predict.py                 # Tek görüntü tahmini
+│
+├── 📂 dataset/                    # Veri seti (git'e eklenmez)
 │   ├── train/
-│   │   ├── infected/          # Enfekte hücre görüntüleri (%70)
-│   │   └── uninfected/        # Sağlıklı hücre görüntüleri (%70)
+│   │   ├── Parasitized/           # 13.504 PNG
+│   │   └── Uninfected/            # 13.504 PNG
 │   ├── val/
-│   │   ├── infected/          # Doğrulama seti (%20)
-│   │   └── uninfected/
+│   │   ├── Parasitized/           # 2.894 PNG
+│   │   └── Uninfected/            # 2.894 PNG
 │   └── test/
-│       ├── infected/          # Test seti (%10)
-│       └── uninfected/
+│       ├── Parasitized/           # 2.893 PNG
+│       └── Uninfected/            # 2.893 PNG
 │
 ├── 📂 models/
-│   └── weights/               # Eğitilmiş model ağırlıkları (.pth, .pt)
+│   └── weights/                   # Eğitilmiş .pth dosyaları (git'e eklenmez)
 │
 ├── 📂 outputs/
-│   ├── predictions/           # Tahmin görsel çıktıları
-│   ├── metrics/               # Eğitim grafikleri ve metrik dosyaları
-│   ├── confusion_matrix/      # Karmaşıklık matrisi görselleri
-│   └── grad_cam/              # Explainable AI ısı haritaları
+│   ├── plots/                     # Accuracy/Loss/ROC grafikleri
+│   ├── confusion_matrix/          # Karmaşıklık matrisi görselleri
+│   ├── grad_cam/                  # Grad-CAM ısı haritaları
+│   ├── predictions/               # Tekil tahmin görselleri
+│   └── metrics/                   # JSON metrik dosyaları
 │
-├── 📂 src/
-│   ├── prepare_dataset.py     # Veri hazırlama ve bölme
-│   ├── train_efficientnet.py  # EfficientNet eğitim scripti
-│   ├── train_yolo.py          # YOLOv8 eğitim scripti
-│   ├── evaluate.py            # Model değerlendirme
-│   ├── predict.py             # Tek görüntü tahmini
-│   ├── gradcam_visualize.py   # Grad-CAM görselleştirme
-│   └── utils.py               # Yardımcı fonksiyonlar
+├── 📂 report/                     # Akademik rapor
+├── 📂 demo/                       # Demo video senaryosu
+├── 📂 brochure/                   # Tanıtım broşürü
+├── 📂 notebooks/                  # Keşifsel analiz notebookları
 │
-├── 📂 notebooks/
-│   ├── 01_EDA.ipynb           # Keşifsel veri analizi
-│   ├── 02_Training.ipynb      # Model eğitim notebookları
-│   └── 03_Evaluation.ipynb    # Sonuç değerlendirme
-│
-├── 📂 report/
-│   └── akademik_rapor.docx    # Akademik proje raporu
-│
-├── 📂 demo/
-│   └── demo_video_senaryosu.md # Demo video içeriği
-│
-├── 📂 brochure/
-│   └── tanitim_brosuru.md     # Tanıtım broşürü içeriği
-│
-├── requirements.txt           # Python bağımlılıkları
-├── .gitignore                 # Git dışlama kuralları
-└── README.md                  # Bu dosya
+├── requirements.txt               # Python bağımlılıkları
+├── .gitignore                     # Git dışlama kuralları
+└── README.md                      # Bu dosya
 ```
 
 ---
 
-## 👤 Geliştirici
+## 💻 Kurulum
+
+### Gereksinimler
+
+- Python 3.9+
+- pip veya conda
+- GPU opsiyonel (CPU ile de çalışır, daha yavaş)
+
+### Adımlar
+
+```bash
+# 1. Repository'yi klonlayın
+git clone https://github.com/KULLANICIADINIZ/malaria-detection.git
+cd malaria-detection
+
+# 2. Sanal ortam oluşturun
+python -m venv venv
+source venv/bin/activate        # Linux/Mac
+# venv\Scripts\activate         # Windows
+
+# 3. Bağımlılıkları yükleyin
+pip install -r requirements.txt
+
+# 4. Veri setini indirin (Kaggle API gerektirir)
+#    Alternatif: https://www.kaggle.com/datasets/iarunava/cell-images-for-detecting-malaria
+pip install kaggle
+# ~/.kaggle/kaggle.json dosyasını oluşturun
+python src/prepare_dataset.py
+```
+
+**Manuel indirme seçeneği:**
+Kaggle'dan `cell-images-for-detecting-malaria.zip` dosyasını indirin ve `dataset/raw/cell_images/` altına çıkartın, ardından:
+```bash
+python src/prepare_dataset.py
+```
+
+---
+
+## 🚀 Çalıştırma Talimatları
+
+### Adım 1: Eğitim
+
+```bash
+# Her iki modeli sırayla eğit
+python src/train.py --model all
+
+# Sadece Custom CNN
+python src/train.py --model cnn
+
+# Sadece EfficientNetB0
+python src/train.py --model efficientnet
+```
+
+### Adım 2: Değerlendirme
+
+```bash
+python src/evaluate.py
+```
+Çıktı: confusion matrix, ROC eğrisi, karşılaştırma grafiği, JSON metrikler
+
+### Adım 3: Grad-CAM Görselleştirme
+
+```bash
+# Test setinden 8 rastgele görüntü
+python src/gradcam.py
+
+# Tek görüntü
+python src/gradcam.py --image dataset/test/Parasitized/örnek.png
+```
+
+### Adım 4: Tekil Tahmin
+
+```bash
+python src/predict.py --image path/to/cell.png
+python src/predict.py --image path/to/cell.png --model cnn
+```
+
+---
+
+## 📄 Dosya Referansı
+
+| Dosya | Görev | Giriş | Çıkış |
+|-------|-------|-------|-------|
+| `src/config.py` | Tüm parametreler | — | sabitler |
+| `src/dataset.py` | DataLoader fabrikası | klasör yolları | DataLoader nesneleri |
+| `src/models.py` | Model tanımları | — | nn.Module |
+| `src/train.py` | Eğitim döngüsü | DataLoader | .pth dosyaları, history JSON |
+| `src/evaluate.py` | Test değerlendirmesi | .pth, DataLoader | PNG grafikler, JSON |
+| `src/gradcam.py` | Grad-CAM ısı haritası | .pth, görüntü | PNG grid görselleri |
+| `src/predict.py` | Tekil tahmin | .pth, tek görüntü | terminal + PNG |
+
+---
+
+## 👤 Geliştirici Bilgisi
 
 **Ad Soyad:** [Adınız]  
 **Üniversite:** [Üniversiteniz]  
 **Bölüm:** [Bölümünüz]  
-**Ders:** Yapay Zeka / Derin Öğrenme  
-**Danışman:** [Hoca Adı]
+**Ders:** Derin Öğrenme / Yapay Zeka  
+**Danışman:** [Hoca Adı]  
+**Akademik Yıl:** 2025-2026
 
 ---
 
-## 📚 Referanslar
+## 📚 Kaynaklar
 
-1. Rajaraman, S. et al. (2018). Pre-trained convolutional neural networks as feature extractors toward improved malaria parasite detection in thin blood smear images. *PeerJ*, 6, e4568.
-2. Jocher, G. et al. (2023). Ultralytics YOLOv8. [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
-3. Tan, M., & Le, Q. (2019). EfficientNet: Rethinking model scaling for convolutional neural networks. *ICML 2019*.
-4. Selvaraju, R. R. et al. (2017). Grad-CAM: Visual explanations from deep networks via gradient-based localization. *ICCV 2017*.
+- Rajaraman, S. et al. (2018). Pre-trained CNNs as feature extractors for malaria parasite detection. *PeerJ*, 6, e4568.
+- Tan, M. & Le, Q. (2019). EfficientNet: Rethinking Model Scaling. *ICML 2019*.
+- Selvaraju, R.R. et al. (2017). Grad-CAM: Visual Explanations from Deep Networks. *ICCV 2017*.
+- WHO World Malaria Report 2023.
