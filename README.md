@@ -402,7 +402,7 @@ python src/predict.py --image path/to/cell.png --model cnn
 
 ## 👤 Geliştirici Bilgisi
 
-**Ad Soyad:** [Sıla]  
+**Ad Soyad:** [Sıla KANGAL]  
 **Üniversite:** [Ostim Teknik Üniversitesi]  
 **Bölüm:** [Yapay Zeka Mühendisliği]  
 **Ders:** Derin Öğrenme  
