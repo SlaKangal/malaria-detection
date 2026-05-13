@@ -2,7 +2,7 @@
 ### ve Grad-CAM ile Açıklanabilirlik Analizi
 
 <p align="center">
-  <img src="outputs/grad_cam/gradcam_part1.png" alt="Grad-CAM Örneği" width="750"/>
+  <img src="outputs/gradcam_grid.png"" alt="Grad-CAM Örneği" width="750"/>
 </p>
 
 > **Not:** Görüntüler gerçek model çıktılarından alınmıştır. Kırmızı bölgeler modelin en çok dikkat ettiği alanları (parazit vakuolü, halka yapısı) göstermektedir.
