@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+
+# Dataset (büyük dosyalar GitHub'a yüklenmez)
+dataset/train/
+dataset/val/
+dataset/test/
+dataset/raw/
+*.zip
+
+# Model ağırlıkları (büyük dosyalar)
+models/weights/*.pth
+models/weights/*.pt
+models/weights/*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+runs/
+wandb/
+*.log
